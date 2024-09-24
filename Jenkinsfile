@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   stages {
-            stage('Checkout') {
+      stage('Checkout') {
             steps {
                 // Clone the Git repository
                 git credentialsId: 'github-credentials', url: 'https://github.com/Nada-omri/kubernetes-devops-security.git', branch: 'main'
@@ -23,4 +23,3 @@ pipeline {
         }  
         }    
     }
-}
