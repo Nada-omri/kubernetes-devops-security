@@ -15,10 +15,16 @@ pipeline {
               archive 'target/*.jar' //so that they can be downloaded later
             }
         } 
-      stage('Unit Tests') {
+      stage('Unit Tests-Junit and Jacoco') {
             steps {
               bat "mvn test"
               
+            }
+            post{
+              always{
+                junit 'target/surefire-reports/*.xml'
+                Jacoco execPattern: 'target/jacoco.exec'
+              }
             }
         }  
         }
