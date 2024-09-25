@@ -30,7 +30,7 @@ pipeline {
               }
             }
         } 
-      stage(Docker Build and Push){
+      stage('Docker Build and Push'){
         steps{
           withDockerRegistry([credentialsId:"Dockerhub-credential" , url:"" ])
           bat 'set'  // Prints all environment variables in the current context (Windows equivalent to `printenv`)
