@@ -34,8 +34,8 @@ pipeline {
     stage('Docker Build and Push') {
       steps {
         withDockerRegistry([credentialsId: "Dockerhub-credential", url: ""]) {
-          bat 'docker build -t nadaomri/${DOCKER_IMAGE}:${BUILD_TAG} .'
-          bat 'docker push nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}'
+      bat 'docker build -t nadaomri/%DOCKER_IMAGE%:%BUILD_TAG% .'
+      bat 'docker push nadaomri/%DOCKER_IMAGE%:%BUILD_TAG%'
         }
       }
     } 
