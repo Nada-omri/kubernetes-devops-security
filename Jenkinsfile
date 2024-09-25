@@ -57,7 +57,7 @@ pipeline {
           // Commit and push the changes to the Kubernetes YAML file
           bat '''
             git config --global user.email "nada.6.omri@gmail.com"
-            git config --global user.name "Nada-omri"
+            git config --global user.name "nada.6.omri@gmail.com"
             git add k8s_deployment_service.yaml
             git commit -m "Update image to ${DOCKER_IMAGE}:${BUILD_TAG}"
             git push origin main
