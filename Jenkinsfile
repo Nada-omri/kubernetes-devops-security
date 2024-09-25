@@ -8,7 +8,7 @@ pipeline {
     stage('Checkout') {
       steps {
         // Clone the Git repository via SSH
-        git credentialsId: 'github-ssh-credentials', url: 'git@github.com:Nada-omri/kubernetes-devops-security.git', branch: 'main'
+        git credentialsId: 'github-credentials', url: 'https://github.com/Nada-omri/kubernetes-devops-security.git', branch: 'main'
       }
     }
 
