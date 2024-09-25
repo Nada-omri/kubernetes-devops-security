@@ -1,6 +1,9 @@
 pipeline {
   agent any
-
+  environment{
+    DOCKER_IMAGE = "devsecops"
+    BUILD_TAG = "v.${BUILD_NUMBER}"
+  }
   stages {
       stage('Checkout') {
             steps {
@@ -26,7 +29,15 @@ pipeline {
                 jacoco execPattern: 'target/jacoco.exec'
               }
             }
-        }  
+        } 
+      stage(Docker Build and Push){
+        steps{
+          withDockerRegistry([credentialsId:"Dockerhub-credential" , url:"" ])
+          bat 'set'  // Prints all environment variables in the current context (Windows equivalent to `printenv`)
+          bat 'docker build -t nadaomri/${DOCKER_IMAGE}:${BUILD_TAG} .'
+          bat 'docker push nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}'
+        }
+      } 
         }
       post {
           success {
