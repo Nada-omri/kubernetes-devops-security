@@ -55,7 +55,7 @@ pipeline {
                         bat 'git config user.name "nada.6.omri@gmail.com"'
 
                         // Add and commit changes
-                        bat "git add ${KUBERNETES_FILE}"
+                        bat "git add k8s_deployment_service.yaml"
                         bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
 
                         // Push changes
