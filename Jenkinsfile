@@ -3,6 +3,8 @@ pipeline {
   environment {
     DOCKER_IMAGE = "devsecops"
     BUILD_TAG = "v.${BUILD_NUMBER}"
+    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
+    KUBERNETES_REPO_DIR = 'Devsecops-training'
   }
   stages {
     stage('Checkout') {
@@ -45,28 +47,23 @@ pipeline {
     // New stage to update Kubernetes deployment
     stage('Kubernetes Deployment') {
       steps {
-        script {
-          def kubernetesFile = 'k8s_deployment_service.yaml' // Path to your Kubernetes file
-          def imageTag = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+                script {
+                    // Change directory to the cloned repository
+                    dir(KUBERNETES_REPO_DIR) {
+                        // Configure Git
+                        bat 'git config user.email "nada.6.omri@gmail.com"'
+                        bat 'git config user.name "nada.6.omri@gmail.com"'
 
-          // Use PowerShell to replace the image tag in the Kubernetes YAML file
-          powershell '''
-            (Get-Content k8s_deployment_service.yaml) -replace 'image: .*', 'image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}' | Set-Content k8s_deployment_service.yaml
-          '''
+                        // Add and commit changes
+                        bat "git add ${KUBERNETES_FILE}"
+                        bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
 
-          // Commit and push the changes to the Kubernetes YAML file
-          bat '''
-            git config --global user.email "nada.6.omri@gmail.com"
-            git config --global user.name "nada.6.omri@gmail.com"
-            git add k8s_deployment_service.yaml
-            git commit -m "Update image to ${DOCKER_IMAGE}:${BUILD_TAG}"
-            git push origin main -v --force --no-verify
-          '''
+                        // Push changes
+                        bat 'git push origin main'
+                    }
 
-          // Apply the updated Kubernetes deployment
-          bat 'kubectl apply -f k8s_deployment_service.yaml'
-        }
-      }
+                }
+            }
     }
   }
 
