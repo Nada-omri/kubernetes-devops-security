@@ -16,8 +16,9 @@ spec:
         app: devsecops
     spec:
       containers:
-      - image: replace
+      - image: nadaomri/devsecops:v.21
         name: devsecops-container
+     #you can make the image in a private registry then deploy add secret
 ---
 apiVersion: v1
 kind: Service
@@ -27,7 +28,7 @@ metadata:
   name: devsecops-svc
 spec:
   ports:
-  - port: 8080
+  - port: 8081
     protocol: TCP
     targetPort: 8080
   selector:

@@ -18,34 +18,58 @@ pipeline {
               archive 'target/*.jar' //so that they can be downloaded later
             }
         } 
+      
       stage('Unit Tests-Junit and Jacoco') {
             steps {
               bat "mvn test"
-              
             }
-            post{
-              always{
+            post {
+              always {
                 junit 'target/surefire-reports/*.xml'
                 jacoco execPattern: 'target/jacoco.exec'
               }
             }
         } 
 
-    stage('Docker Build and Push') {
-      steps {
-        withDockerRegistry([credentialsId: "Dockerhub-credential", url: ""]) {
-      bat 'docker build -t nadaomri/%DOCKER_IMAGE%:%BUILD_TAG% .'
-      bat 'docker push nadaomri/%DOCKER_IMAGE%:%BUILD_TAG%'
+      stage('Docker Build and Push') {
+        steps {
+          withDockerRegistry([credentialsId: "Dockerhub-credential", url: ""]) {
+            bat 'docker build -t nadaomri/%DOCKER_IMAGE%:%BUILD_TAG% .'
+            bat 'docker push nadaomri/%DOCKER_IMAGE%:%BUILD_TAG%'
+          }
         }
       }
-    } 
+
+      // New stage to update Kubernetes deployment
+      stage(' Kubernetes Deployment') {
+        steps {
+          script {
+            def kubernetesFile = 'k8s_deployment_service.yaml' // Path to your Kubernetes file
+            def imageTag = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+            // Replace the image tag in the Kubernetes YAML file
+            bat "sed -i 's|image: .*|image: ${imageTag}|' ${kubernetesFile}"
+          }
+          
+          // Commit and push the changes
+          bat '''
+            git config --global user.email "nada.6.omri@gmail.com"
+            git config --global user.name "Nada-omri"
+            git add ${kubernetesFile}
+            git commit -m "Update image to ${DOCKER_IMAGE}:${BUILD_TAG}"
+            git push origin main
+          '''
+          bat 'kubectl apply -f k8s/deployment.yaml'
         }
-      post {
-          success {
-              echo 'Pipeline completed successfully!'
-          }
-          failure {
-              echo 'Pipeline failed!'
-          }
-      }    
+      }
+
     }
+
+    post {
+      success {
+        echo 'Pipeline completed successfully!'
+      }
+      failure {
+        echo 'Pipeline failed!'
+      }
+    }
+}
