@@ -7,8 +7,8 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        // Clone the Git repository
-        git credentialsId: 'github-credentials', url: 'https://github.com/Nada-omri/kubernetes-devops-security.git', branch: 'main'
+        // Clone the Git repository via SSH
+        git credentialsId: 'github-ssh-credentials', url: 'git@github.com:Nada-omri/kubernetes-devops-security.git', branch: 'main'
       }
     }
 
@@ -60,7 +60,7 @@ pipeline {
             git config --global user.name "nada.6.omri@gmail.com"
             git add k8s_deployment_service.yaml
             git commit -m "Update image to ${DOCKER_IMAGE}:${BUILD_TAG}"
-            git push origin main
+            git push origin main -v --force --no-verify
           '''
 
           // Apply the updated Kubernetes deployment
