@@ -53,7 +53,7 @@ pipeline {
                 // Replace the image in the file
                 def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
                 // Rewrite the file with the updated content
-                writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
+                writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile1
             }
         }
     }
