@@ -3,8 +3,8 @@ pipeline {
   environment {
     DOCKER_IMAGE = "devsecops"
     BUILD_TAG = "v.${BUILD_NUMBER}"
-    KUBERNETES_FILE = 'C:\ProgramData\Jenkins\.jenkins\workspace\Devsecops-training\k8s_deployment_service.yaml'
-    KUBERNETES_REPO_DIR = 'C:\ProgramData\Jenkins\.jenkins\workspace\Devsecops-training'
+    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
+    KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training'
   }
   stages {
     stage('Checkout') {
