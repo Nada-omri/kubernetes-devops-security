@@ -37,64 +37,23 @@ pipeline {
       steps {
         script {
           withDockerRegistry([credentialsId: "Dockerhub-credential", url: ""]) {
-            bat "docker build -t nadaomri/%DOCKER_IMAGE%:%BUILD_TAG% ."
-            bat "docker push nadaomri/%DOCKER_IMAGE%:%BUILD_TAG%"
+            bat "docker build -t nadaomri/${DOCKER_IMAGE}:${BUILD_TAG} ."
+            bat "docker push nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
           }
         }
       }
     }
 
-    stage('Checkout Kubernetes Repo') {
-                steps {
-                    script {
-                        def repoUrl = 'https://github.com/Nada-omri/kubernetes-devops-security.git'
-                        bat "git clone ${repoUrl} ${KUBERNETES_REPO_DIR}"
-                    }
-                }
-            }
-
-    stage('Update Kubernetes File') {
+    stage('K8S Deployment - DEV') {
       steps {
         script {
-          // Ensure the Kubernetes file exists after cloning
-          if (fileExists(KUBERNETES_FILE)) {
-            // Read the Kubernetes file
-            def kubernetesFile = readFile(KUBERNETES_FILE)
-            // Replace the image tag in the Kubernetes file
-            def updatedKubernetesFile = kubernetesFile.replaceAll(/image: nadaomri\/devsecops:.+/, "image: nadaomri/devsecops:${BUILD_TAG}")
-            // Write the updated content back to the Kubernetes file
-            writeFile file: KUBERNETES_FILE, text: updatedKubernetesFile
-            // Print the updated content for verification
-            echo "Updated Kubernetes file content:\n${updatedKubernetesFile}"
-          } else {
-            error "Kubernetes file not found: ${KUBERNETES_FILE}"
+          withKubeConfig([credentialsId: 'kubeconfig-credential']) {
+            // Update the image name in the Kubernetes YAML file
+            bat "sed -i 's#replace#${DOCKER_IMAGE}:${BUILD_TAG}#g' ${KUBERNETES_FILE}"
+
+            // Apply the Kubernetes deployment
+            bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
           }
-        }
-      }
-    }
-
-    stage('Clone, Commit, Push and Clean Up') {
-      steps {
-        script {
-          // Change directory to the cloned repository
-          dir(KUBERNETES_REPO_DIR) {
-            // Configure Git
-            bat "git config user.name 'Nada omri'"
-            bat "git config user.email 'nada.6.omri@gmail.com'"
-
-            // Add and commit changes
-            
-            bat "git add ${KUBERNETES_FILE}"
-            bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
-
-            // Push changes with verbose output
-            timeout(time: 5, unit: 'MINUTES') {
-            bat 'git push --verbose origin main'
-                }
-          }
-
-          // Clean up - remove the cloned repository
-          bat "rmdir /s /q ${KUBERNETES_REPO_DIR}"
         }
       }
     }
