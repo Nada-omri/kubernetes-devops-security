@@ -44,26 +44,33 @@ pipeline {
       }
     }
 
-    // New stage to update Kubernetes deployment
+    stage('Update Kubernetes Image') {
+      steps {
+        script {
+          // Replace the image in the Kubernetes YAML file
+          bat "powershell -Command \"(Get-Content ${KUBERNETES_FILE}) -replace 'image: .*', 'image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}' | Set-Content ${KUBERNETES_FILE}\""
+        }
+      }
+    }
+
     stage('Kubernetes Deployment') {
       steps {
-                script {
-                    // Change directory to the cloned repository
-                    dir(KUBERNETES_REPO_DIR) {
-                        // Configure Git
-                        bat 'git config user.email "nada.6.omri@gmail.com"'
-                        bat 'git config user.name "nada.6.omri@gmail.com"'
+        script {
+          // Change directory to the cloned repository
+          dir(KUBERNETES_REPO_DIR) {
+            // Configure Git
+            bat 'git config user.email "nada.6.omri@gmail.com"'
+            bat 'git config user.name "nada.6.omri@gmail.com"'
 
-                        // Add and commit changes
-                        bat "git add ${KUBERNETES_FILE}"
-                        bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
+            // Add and commit changes
+            bat "git add ${KUBERNETES_FILE}"
+            bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
 
-                        // Push changes
-                        bat 'git push origin main'
-                    }
-
-                }
-            }
+            // Push changes
+            bat 'git push origin main'
+          }
+        }
+      }
     }
   }
 
