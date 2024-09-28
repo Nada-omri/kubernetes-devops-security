@@ -86,8 +86,10 @@ pipeline {
             bat "git add ${KUBERNETES_FILE}"
             bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
 
-            // Push changes
-            bat 'git push origin main'
+            // Push changes with verbose output
+            timeout(time: 5, unit: 'MINUTES') {
+            bat 'git push --verbose origin main'
+                }
           }
 
           // Clean up - remove the cloned repository
