@@ -44,6 +44,15 @@ pipeline {
       }
     }
 
+    stage('Checkout Kubernetes Repo') {
+                steps {
+                    script {
+                        def repoUrl = 'https://github.com/Nada-omri/kubernetes-devops-security.git'
+                        bat "git clone ${repoUrl} ${KUBERNETES_REPO_DIR}"
+                    }
+                }
+            }
+
     stage('Update Kubernetes File') {
       steps {
         script {
