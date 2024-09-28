@@ -3,7 +3,7 @@ pipeline {
   environment {
     DOCKER_IMAGE = "devsecops"
     BUILD_TAG = "v.${BUILD_NUMBER}"
-    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml"'
+    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
     KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
   }
   stages {
@@ -44,22 +44,32 @@ pipeline {
       }
     }
 
+    // Groovy stage for updating Kubernetes YAML
+    stage('Update Kubernetes File with Groovy') {
+      steps {
+        script {
+          // Lire le contenu du fichier Kubernetes YAML
+          def kubernetesFile = readFile("${KUBERNETES_FILE}")
+          // Remplacer l'image dans le fichier
+          def updatedKubernetesFile = kubernetesFile.replaceAll('replace', "${DOCKER_IMAGE}:${BUILD_TAG}")
+          // Réécrire le fichier avec le contenu mis à jour
+          writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
+        }
+      }
+    }
+
     stage('K8S Deployment - DEV') {
       steps {
         script {
           withKubeConfig([credentialsId: 'kubeconfig-credential']) {
-            // Use PowerShell to replace the image tag in the Kubernetes YAML file
-            bat """
-            powershell -Command "(Get-Content ${KUBERNETES_FILE}) -replace 'replace', '${DOCKER_IMAGE}:${BUILD_TAG}' | Set-Content ${KUBERNETES_FILE}"
-            """
-
-            // Apply the Kubernetes deployment
+            // Appliquer le déploiement Kubernetes mis à jour
             bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
           }
         }
       }
     }
   }
+  
   post {
     success {
       echo 'Pipeline completed successfully!'
