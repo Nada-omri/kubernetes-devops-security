@@ -46,17 +46,18 @@ pipeline {
 
     // Groovy stage for updating Kubernetes YAML
     stage('Update Kubernetes File with Groovy') {
-      steps {
-        script {
-          // Lire le contenu du fichier Kubernetes YAML
-          def kubernetesFile = readFile("${KUBERNETES_FILE}")
-          // Remplacer l'image dans le fichier
-          def updatedKubernetesFile = kubernetesFile.replaceAll('replace', "${DOCKER_IMAGE}:${BUILD_TAG}")
-          // Réécrire le fichier avec le contenu mis à jour
-          writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
+        steps {
+            script {
+                // Read the content of the Kubernetes YAML file
+                def kubernetesFile = readFile("${KUBERNETES_FILE}")
+                // Replace the image in the file
+                def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
+                // Rewrite the file with the updated content
+                writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
+            }
         }
-      }
     }
+
 
     stage('K8S Deployment - DEV') {
       steps {
