@@ -48,8 +48,10 @@ pipeline {
       steps {
         script {
           withKubeConfig([credentialsId: 'kubeconfig-credential']) {
-            // Update the image name in the Kubernetes YAML file
-            bat "sed -i 's#replace#${DOCKER_IMAGE}:${BUILD_TAG}#g' ${KUBERNETES_FILE}"
+            // Use PowerShell to replace the image tag in the Kubernetes YAML file
+            bat """
+            powershell -Command "(Get-Content ${KUBERNETES_FILE}) -replace 'replace', '${DOCKER_IMAGE}:${BUILD_TAG}' | Set-Content ${KUBERNETES_FILE}"
+            """
 
             // Apply the Kubernetes deployment
             bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
