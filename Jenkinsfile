@@ -3,8 +3,8 @@ pipeline {
   environment {
     DOCKER_IMAGE = "devsecops"
     BUILD_TAG = "v.${BUILD_NUMBER}"
-    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
-    KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training'
+    KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test\\k8s_deployment_service.yaml'
+    KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
   }
   stages {
     stage('Checkout') {
@@ -44,23 +44,34 @@ pipeline {
       }
     }
 
-    stage('Update Kubernetes Image') {
+    stage('Update Kubernetes File') {
       steps {
         script {
-          // Replace the image in the Kubernetes YAML file
-          bat "powershell -Command \"(Get-Content ${KUBERNETES_FILE}) -replace 'image: .*', 'image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}' | Set-Content ${KUBERNETES_FILE}\""
+          // Ensure the Kubernetes file exists after cloning
+          if (fileExists(KUBERNETES_FILE)) {
+            // Read the Kubernetes file
+            def kubernetesFile = readFile(KUBERNETES_FILE)
+            // Replace the image tag in the Kubernetes file
+            def updatedKubernetesFile = kubernetesFile.replaceAll(/image: nadaomri\/devsecops:.+/, "image: nadaomri/devsecops:${BUILD_TAG}")
+            // Write the updated content back to the Kubernetes file
+            writeFile file: KUBERNETES_FILE, text: updatedKubernetesFile
+            // Print the updated content for verification
+            echo "Updated Kubernetes file content:\n${updatedKubernetesFile}"
+          } else {
+            error "Kubernetes file not found: ${KUBERNETES_FILE}"
+          }
         }
       }
     }
 
-    stage('Kubernetes Deployment') {
+    stage('Clone, Commit, Push and Clean Up') {
       steps {
         script {
           // Change directory to the cloned repository
           dir(KUBERNETES_REPO_DIR) {
             // Configure Git
-            bat 'git config user.email "nada.6.omri@gmail.com"'
             bat 'git config user.name "nada.6.omri@gmail.com"'
+            bat 'git config user.email "nada.6.omri@gmail.com"'
 
             // Add and commit changes
             bat "git add ${KUBERNETES_FILE}"
@@ -69,11 +80,13 @@ pipeline {
             // Push changes
             bat 'git push origin main'
           }
+
+          // Clean up - remove the cloned repository
+          bat "rmdir /s /q ${KUBERNETES_REPO_DIR}"
         }
       }
     }
   }
-
   post {
     success {
       echo 'Pipeline completed successfully!'
