@@ -79,9 +79,11 @@ pipeline {
           // Change directory to the cloned repository
           dir(KUBERNETES_REPO_DIR) {
             // Configure Git
-
+            bat "git config user.name 'Nada omri'"
+            bat "git config user.email 'nada.6.omri@gmail.com'"
 
             // Add and commit changes
+            
             bat "git add ${KUBERNETES_FILE}"
             bat 'git commit -m "Update Kubernetes image tag to ${BUILD_TAG}"'
 
