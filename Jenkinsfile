@@ -52,7 +52,7 @@ pipeline {
     script {
       def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
       // Call the Trivy scan shell script using the full path to Bash
-      bat "C:\\Program Files\\Git\\bin\\bash.exe C:\Users\MSI\kubernetes-devops-security\trivy-docker-scan-image.sh ${dockerImageName}"
+      bat "C:\\Program Files\\Git\\bin\\bash.exe C:\\Users\\MSI\\kubernetes-devops-security\\trivy-docker-scan-image.sh ${dockerImageName}"
     }
   }
 }
