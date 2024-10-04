@@ -51,8 +51,21 @@ pipeline {
           steps {
             script {
               def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
-              // Call the Trivy scan shell script using the full path to Bash
-              bat "C:\\Program Files\\Git\\bin\\bash.exe C:\\Users\\MSI\\kubernetes-devops-security\\trivy-docker-scan-image.sh ${dockerImageName}"
+              
+              // Run Trivy scan on the Docker image
+              def trivyScanCommand = """
+                docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL ${dockerImageName}
+              """
+              
+              // Execute the command
+              def exitCode = bat(script: trivyScanCommand, returnStatus: true)
+
+              // Check the exit code of the Trivy scan
+              if (exitCode != 0) {
+                error "Image scanning failed. Vulnerabilities found."
+              } else {
+                echo "Image scanning passed. No HIGH or CRITICAL vulnerabilities found."
+              }
             }
           }
         }
