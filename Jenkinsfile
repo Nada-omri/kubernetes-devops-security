@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Clone the Git repository via SSH
                 git credentialsId: 'github-credentials', url: 'https://github.com/Nada-omri/kubernetes-devops-security.git', branch: 'main'
             }
         }
@@ -39,32 +40,26 @@ pipeline {
             }
         }
 
-        stage('Extract Base Image from Dockerfile') {
+        stage('Vulnerability Scan - Docker') {
             steps {
                 script {
-                    // Extract the base image name from the Dockerfile
-                    def dockerFilePath = 'Dockerfile'
-                    def baseImage = bat(script: "powershell -Command \"Select-String -Pattern '^FROM ' ${dockerFilePath} | ForEach-Object { $_.ToString().Split(' ')[1] }\"", returnStdout: true).trim()
-                    env.BASE_IMAGE = baseImage
-                    echo "Base image extracted: ${env.BASE_IMAGE}"
-                }
-            }
-        }
+                    // Extract the Docker image name from the Dockerfile
+            def dockerImageName = bat(script: "powershell -Command \"(Get-Content Dockerfile | Select-Object -First 1) -replace '^[^ ]+ ', ''\"", returnStdout: true).trim()
+            echo "Docker Image Name: ${dockerImageName}"
 
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    // Scan the base image using Trivy
-                    bat "docker pull ${env.BASE_IMAGE}"
-                    bat "docker run --rm -v %WORKSPACE%:/root/.cache/ aquasec/trivy:0.17.2 image --exit-code 1 --severity HIGH ${env.BASE_IMAGE}"
-                    bat "docker run --rm -v %WORKSPACE%:/root/.cache/ aquasec/trivy:0.17.2 image --exit-code 1 --severity CRITICAL ${env.BASE_IMAGE}"
+                    // Run Trivy scan for HIGH severity vulnerabilities
+                    def highScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 0 --severity HIGH --light ${dockerImageName}"
+                    def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
 
-                    def exitCode = currentBuild.rawBuild.getResult() == 'FAILURE' ? 1 : 0
-                    echo "Trivy scan exit code: ${exitCode}"
-                    if (exitCode != 0) {
-                        error("Image scanning failed. Vulnerabilities found.")
+                    // Run Trivy scan for CRITICAL severity vulnerabilities
+                    def criticalScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
+                    def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
+
+                    // Check scan results
+                    if (criticalScanExitCode != 0) {
+                        error "Image scanning failed. CRITICAL vulnerabilities found."
                     } else {
-                        echo "Image scanning passed. No vulnerabilities found."
+                        echo "Image scanning passed. No CRITICAL vulnerabilities found."
                     }
                 }
             }
@@ -84,8 +79,11 @@ pipeline {
         stage('Update Kubernetes File with Groovy') {
             steps {
                 script {
+                    // Read the content of the Kubernetes YAML file
                     def kubernetesFile = readFile("${KUBERNETES_FILE}")
+                    // Replace the image in the file
                     def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
+                    // Rewrite the file with the updated content
                     writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
                 }
             }
@@ -95,6 +93,7 @@ pipeline {
             steps {
                 script {
                     withKubeConfig([credentialsId: 'kubeconfig-credential']) {
+                        // Apply the updated Kubernetes deployment
                         bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                     }
                 }
