@@ -44,7 +44,7 @@ pipeline {
             steps {
                 script {
                     // Extract the Docker image name from the Dockerfile
-                    def dockerImageName = bat(script: "awk 'NR==1 {print \$2}' Dockerfile", returnStdout: true).trim()
+                    def dockerImageName = bat(script: "powershell -Command \"(Get-Content Dockerfile | Select-Object -First 1) -replace '^[^ ]+ ', ''\"", returnStdout: true).trim()
                     echo "Docker Image Name: ${dockerImageName}"
 
                     // Run Trivy scan for HIGH severity vulnerabilities
