@@ -47,16 +47,16 @@ pipeline {
             bat "mvn dependency-check:check"
           }
         }
-        sstage('Trivy Scan') {
-  steps {
-    script {
-      def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
-      // Call the Trivy scan shell script using the full path to Bash
-      bat "C:\\Program Files\\Git\\bin\\bash.exe C:\\Users\\MSI\\kubernetes-devops-security\\trivy-docker-scan-image.sh ${dockerImageName}"
-    }
-  }
-}
-
+        stage('Trivy Scan') {  // Corrected here by removing the extra 's'
+          steps {
+            script {
+              def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+              // Call the Trivy scan shell script using the full path to Bash
+              bat "C:\\Program Files\\Git\\bin\\bash.exe C:\\Users\\MSI\\kubernetes-devops-security\\trivy-docker-scan-image.sh ${dockerImageName}"
+            }
+          }
+        }
+      }
     }
 
     stage('Docker Build and Push') {
