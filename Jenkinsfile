@@ -41,27 +41,42 @@ pipeline {
         }
 
         stage('Vulnerability Scan - Docker') {
-            steps {
-                script {
-                    // Extract the Docker image name from the Dockerfile
-            def dockerImageName = bat(script: "powershell -Command \"(Get-Content Dockerfile | Select-Object -First 1) -replace '^[^ ]+ ', ''\"", returnStdout: true).trim()
-            echo "Docker Image Name: ${dockerImageName}"
-
-                    // Run Trivy scan for HIGH severity vulnerabilities
-                    def highScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 0 --severity HIGH --light ${dockerImageName}"
-                    def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
-
-                    // Run Trivy scan for CRITICAL severity vulnerabilities
-                    def criticalScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
-                    def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
-
-                    // Check scan results
-                    if (criticalScanExitCode != 0) {
-                        error "Image scanning failed. CRITICAL vulnerabilities found."
-                    } else {
-                        echo "Image scanning passed. No CRITICAL vulnerabilities found."
+            parallel {
+                stage('Dependency Scan') {
+                    steps {
+                        bat "mvn dependency-check:check"
                     }
                 }
+                stage('Vulnerability Scan - Docker') {
+                  steps {
+                      script {
+                          // Extract the Docker image name from the Dockerfile
+                          def dockerImageName = bat(script: 'powershell -Command "(Get-Content Dockerfile | Select-String -Pattern \'^FROM\' | ForEach-Object { $_.Line } | Select-Object -First 1).Split()[1]"', returnStdout: true).trim()
+                          echo "Docker Image Name: ${dockerImageName}"
+
+                          // Ensure the Docker image name is valid
+                          if (dockerImageName == null || dockerImageName == '') {
+                              error "Failed to extract Docker image name from Dockerfile."
+                          }
+
+                          // Run Trivy scan for HIGH severity vulnerabilities on the Docker image
+                          def highScanCommand = "docker run --rm aquasec/trivy:latest image --exit-code 0 --severity HIGH --light ${dockerImageName}"
+                          def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
+
+                          // Run Trivy scan for CRITICAL severity vulnerabilities on the Docker image
+                          def criticalScanCommand = "docker run --rm aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
+                          def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
+
+                          // Check the scan results for critical vulnerabilities
+                          if (criticalScanExitCode != 0) {
+                              error "Image scanning failed. CRITICAL vulnerabilities found."
+                          } else {
+                              echo "Image scanning passed. No CRITICAL vulnerabilities found."
+                          }
+                      }
+                  }
+}
+
             }
         }
 
