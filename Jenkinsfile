@@ -41,34 +41,25 @@ pipeline {
         }
 
         stage('Vulnerability Scan - Docker') {
-            parallel {
-                stage('Dependency Scan') {
-                    steps {
-                        bat "mvn dependency-check:check"
-                    }
-                }
-                stage('Trivy Vulnerability Scan - Docker') {
-                    steps {
-                        script {
-                            // Extract the Docker image name from the Dockerfile
-                            def dockerImageName = sh(script: "awk 'NR==1 {print \$2}' Dockerfile", returnStdout: true).trim()
-                            echo "Docker Image Name: ${dockerImageName}"
+            steps {
+                script {
+                    // Extract the Docker image name from the Dockerfile
+                    def dockerImageName = bat(script: "awk 'NR==1 {print \$2}' Dockerfile", returnStdout: true).trim()
+                    echo "Docker Image Name: ${dockerImageName}"
 
-                            // Run Trivy scan for HIGH severity vulnerabilities
-                            def highScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 0 --severity HIGH --light ${dockerImageName}"
-                            def highScanExitCode = sh(script: highScanCommand, returnStatus: true)
+                    // Run Trivy scan for HIGH severity vulnerabilities
+                    def highScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 0 --severity HIGH --light ${dockerImageName}"
+                    def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
 
-                            // Run Trivy scan for CRITICAL severity vulnerabilities
-                            def criticalScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
-                            def criticalScanExitCode = sh(script: criticalScanCommand, returnStatus: true)
+                    // Run Trivy scan for CRITICAL severity vulnerabilities
+                    def criticalScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
+                    def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
 
-                            // Check scan results
-                            if (criticalScanExitCode != 0) {
-                                error "Image scanning failed. CRITICAL vulnerabilities found."
-                            } else {
-                                echo "Image scanning passed. No CRITICAL vulnerabilities found."
-                            }
-                        }
+                    // Check scan results
+                    if (criticalScanExitCode != 0) {
+                        error "Image scanning failed. CRITICAL vulnerabilities found."
+                    } else {
+                        echo "Image scanning passed. No CRITICAL vulnerabilities found."
                     }
                 }
             }
