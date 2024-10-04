@@ -50,7 +50,7 @@ pipeline {
         stage('Trivy Scan') {  // Corrected here by removing the extra 's'
           steps {
             script {
-              def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+              def dockerImageName = "nadaomri/${DOCKER_IMAGE}:v.74"
               
               // Run Trivy scan on the Docker image
               def trivyScanCommand = """
