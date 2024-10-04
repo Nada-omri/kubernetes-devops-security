@@ -41,9 +41,18 @@ pipeline {
     
     stage('Vulnerability Scan - Docker ') {
       steps {
+        parallel{
+          "Dependency Scan"{
         bat "mvn dependency-check:check"
-    }
+    },
+            "trivy Scan"{
+              def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+              // Call the Trivy scan shell script
+              bat "bash trivy-docker-scan.sh ${dockerImageName}"
+                  }}
+
      }
+    }
 
     stage('Docker Build and Push') {
       steps {
