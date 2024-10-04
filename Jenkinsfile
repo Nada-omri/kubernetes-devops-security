@@ -5,13 +5,11 @@ pipeline {
         BUILD_TAG = "v.${BUILD_NUMBER}"
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
-
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clone the Git repository via SSH
                 git credentialsId: 'github-credentials', url: 'https://github.com/Nada-omri/kubernetes-devops-security.git', branch: 'main'
             }
         }
@@ -41,31 +39,36 @@ pipeline {
             }
         }
 
-          stage('Vulnerability Scan - Docker') {
+        stage('Extract Base Image from Dockerfile') {
             steps {
                 script {
-                    // Use PowerShell to extract the image name from the Dockerfile
-                    def dockerImageName = bat(script: 'powershell -Command "(Get-Content Dockerfile | Select-String -Pattern \'^FROM\' | ForEach-Object { $_.Line } | Select-Object -First 1).Split()[1]"', returnStdout: true).trim()
-                    echo "Docker Image Name: ${dockerImageName}"
-
-                    // Run Trivy scan for HIGH severity vulnerabilities
-                    def highScanCommand = "docker run --rm  aquasec/trivy:latest image --exit-code 0 --severity HIGH  ${dockerImageName}"
-                    def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
-
-                    // Run Trivy scan for CRITICAL severity vulnerabilities
-                    def criticalScanCommand = "docker run --rm  aquasec/trivy:latest image --exit-code 1 --severity CRITICAL  ${dockerImageName}"
-                    def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
-
-                    // Check scan results
-                    if (criticalScanExitCode != 0) {
-                        error "Image scanning failed. CRITICAL vulnerabilities found."
-                    } else {
-                        echo "Image scanning passed. No CRITICAL vulnerabilities found."
-                    }
+                    // Extract the base image name from the Dockerfile
+                    def dockerFilePath = 'Dockerfile'
+                    def baseImage = bat(script: "powershell -Command \"Select-String -Pattern '^FROM ' ${dockerFilePath} | ForEach-Object { $_.ToString().Split(' ')[1] }\"", returnStdout: true).trim()
+                    env.BASE_IMAGE = baseImage
+                    echo "Base image extracted: ${env.BASE_IMAGE}"
                 }
             }
         }
 
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    // Scan the base image using Trivy
+                    bat "docker pull ${env.BASE_IMAGE}"
+                    bat "docker run --rm -v %WORKSPACE%:/root/.cache/ aquasec/trivy:0.17.2 image --exit-code 1 --severity HIGH ${env.BASE_IMAGE}"
+                    bat "docker run --rm -v %WORKSPACE%:/root/.cache/ aquasec/trivy:0.17.2 image --exit-code 1 --severity CRITICAL ${env.BASE_IMAGE}"
+
+                    def exitCode = currentBuild.rawBuild.getResult() == 'FAILURE' ? 1 : 0
+                    echo "Trivy scan exit code: ${exitCode}"
+                    if (exitCode != 0) {
+                        error("Image scanning failed. Vulnerabilities found.")
+                    } else {
+                        echo "Image scanning passed. No vulnerabilities found."
+                    }
+                }
+            }
+        }
 
         stage('Docker Build and Push') {
             steps {
@@ -81,11 +84,8 @@ pipeline {
         stage('Update Kubernetes File with Groovy') {
             steps {
                 script {
-                    // Read the content of the Kubernetes YAML file
                     def kubernetesFile = readFile("${KUBERNETES_FILE}")
-                    // Replace the image in the file
                     def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
-                    // Rewrite the file with the updated content
                     writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
                 }
             }
@@ -95,7 +95,6 @@ pipeline {
             steps {
                 script {
                     withKubeConfig([credentialsId: 'kubeconfig-credential']) {
-                        // Apply the updated Kubernetes deployment
                         bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                     }
                 }
