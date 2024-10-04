@@ -51,7 +51,7 @@ pipeline {
                     steps {
                         script {
                             // Define the Docker image to be scanned
-                            def dockerImageName = 'openjdk:8-jdk-alpine'
+                            def dockerImageName = 'adoptopenjdk/openjdk8:alpine-slim'
                             echo "Scanning Docker Image: ${dockerImageName}"
 
                             // Run Trivy scan for HIGH severity vulnerabilities on the Docker image
