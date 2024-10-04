@@ -48,11 +48,11 @@ pipeline {
                     echo "Docker Image Name: ${dockerImageName}"
 
                     // Run Trivy scan for HIGH severity vulnerabilities
-                    def highScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 0 --severity HIGH --light ${dockerImageName}"
+                    def highScanCommand = "docker run aquasec/trivy:latest image --exit-code 0 --severity HIGH  ${dockerImageName}"
                     def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
 
                     // Run Trivy scan for CRITICAL severity vulnerabilities
-                    def criticalScanCommand = "docker run --rm -v ${env.WORKSPACE}:/root/.cache/ aquasec/trivy:0.17.2 -q image --exit-code 1 --severity CRITICAL --light ${dockerImageName}"
+                    def criticalScanCommand = "docker run aquasec/trivy:latest image --exit-code 1 --severity CRITICAL  ${dockerImageName}"
                     def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
 
                     // Check scan results
