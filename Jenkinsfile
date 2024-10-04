@@ -49,9 +49,11 @@ pipeline {
         }
         stage('Trivy Scan') {
           steps {
+           script {
             def dockerImageName = "nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
             // Call the Trivy scan shell script
             bat "bash trivy-docker-scan.sh ${dockerImageName}"
+        }
           }
         }
       }
