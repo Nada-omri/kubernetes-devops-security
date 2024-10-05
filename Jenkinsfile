@@ -71,10 +71,16 @@ pipeline {
                         }
                     }
 }
-                stage('OPA Conftest'){
-                    steps{
-                    bat'docker run --rm -v $(pwd):/project openpolicyagent/conftest test --policy opa-security.rego Dockerfile '
-                }}
+                stage('OPA Conftest') {
+                    steps {
+                        script {
+                            def workspacePath = env.WORKSPACE.replace('\\', '/')
+                            def conftestCommand = "docker run --rm -v ${workspacePath}:/project openpolicyagent/conftest test --policy opa-security.rego Dockerfile"
+                            bat conftestCommand
+                        }
+    }
+}
+
             }
         }
 
