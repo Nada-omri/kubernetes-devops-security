@@ -18,6 +18,10 @@ spec:
       containers:
       - image: nadaomri/devsecops:v.21
         name: devsecops-container
+        securityContext :
+          runAsNonRoot: true 
+          runAsUser: 100 
+
      #you can make the image in a private registry then deploy add secret
 ---
 apiVersion: v1
