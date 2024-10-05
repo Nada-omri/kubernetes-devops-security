@@ -71,6 +71,9 @@ pipeline {
                         }
                     }
 }
+                stage('OPA Conftest'){
+                    bat'docker run --rm -v $(pwd):/project openpolicyagent/conftest test --policy opa-security.rego Dockerfile '
+                }
             }
         }
 
