@@ -15,12 +15,14 @@ spec:
       labels:
         app: devsecops
     spec:
+      serviceAccountName: default
       containers:
       - image: nadaomri/devsecops:v.21
         name: devsecops-container
         securityContext :
           runAsNonRoot: true 
           runAsUser: 100 
+          readOnlyRootFilesystem: true
 
      #you can make the image in a private registry then deploy add secret
 ---
