@@ -95,6 +95,15 @@ pipeline {
             }
         }
 
+        stage('Vulnerability Scan - Kubernetes') {
+            steps {
+                script {
+                    def workspacePath = env.WORKSPACE.replace('\\', '/')
+                    def conftestCommand = "docker run --rm -v ${workspacePath}:/project openpolicyagent/conftest test --policy opa-k8s-security.rego Dockerfile"
+                    bat conftestCommand
+                        }
+    }
+}
         stage('Update Kubernetes File with Groovy') {
             steps {
                 script {
@@ -111,7 +120,7 @@ pipeline {
         stage('K8S Deployment - DEV') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig-credential']) {
+                    withKubeConfig([credentialsId: 'minikube-server2']) {
                         // Apply the updated Kubernetes deployment
                         bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                     }
