@@ -70,7 +70,7 @@ pipeline {
                             }
                         }
                     }
-}
+                }
                 stage('OPA Conftest') {
                     steps {
                         script {
@@ -78,9 +78,8 @@ pipeline {
                             def conftestCommand = "docker run --rm -v ${workspacePath}:/project openpolicyagent/conftest test --policy opa-security.rego Dockerfile"
                             bat conftestCommand
                         }
-    }
-}
-
+                    }
+                }
             }
         }
 
@@ -96,14 +95,27 @@ pipeline {
         }
 
         stage('Vulnerability Scan - Kubernetes') {
-            steps {
-                script {
-                    def workspacePath = env.WORKSPACE.replace('\\', '/')
-                    def conftestCommand = "docker run --rm -v ${workspacePath}:/project openpolicyagent/conftest test --policy opa-k8s-security.rego k8s_deployment_service.yaml"
-                    bat conftestCommand
+            parallel {
+                stage('OPA conftest') {
+                    steps {
+                        script {
+                            def workspacePath = env.WORKSPACE.replace('\\', '/')
+                            def conftestCommand = "docker run --rm -v ${workspacePath}:/project openpolicyagent/conftest test --policy opa-k8s-security.rego k8s_deployment_service.yaml"
+                            bat conftestCommand
                         }
-    }
-}
+                    }
+                }
+                stage('KubeSec Scan') {
+                    steps {
+                        script {
+                            // Run the PowerShell script for KubeSec scanning
+                            bat "powershell -ExecutionPolicy Bypass -File kubesec-scan.ps1"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Update Kubernetes File with Groovy') {
             steps {
                 script {
