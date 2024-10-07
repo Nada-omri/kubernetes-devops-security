@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    tools {
-        maven 'maven' // Specify the version of Maven you want to use
-    }
     environment {
         DOCKER_IMAGE = "devsecops"
         BUILD_TAG = "v.${BUILD_NUMBER}"
