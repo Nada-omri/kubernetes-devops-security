@@ -36,7 +36,7 @@ pipeline {
 
         stage('Sonarqube-SAST') {
             steps {
-                bat "mvn clean verify sonar:sonar -Dsonar.projectKey=dev -Dsonar.projectName='devsecops' -Dsonar.host.url=http://192.168.1.18:9000 -Dsonar.token=sqp_1e5943d8aba71ee7e863c6dd548707131514fdca"
+                bat "mvn clean verify sonar:sonar -Dsonar.projectKey=dev -Dsonar.projectName='devsecops' -Dsonar.host.url=http://192.168.1.64:9000 -Dsonar.token=sqp_1e5943d8aba71ee7e863c6dd548707131514fdca"
             }
         }
 
@@ -47,7 +47,7 @@ pipeline {
                         bat "mvn dependency-check:check"
                     }
                 }
-                stage('Vulnerability Scan - Docker') {
+                stage('Trivy Scan - Docker') {
                     steps {
                         script {
                             // Define the Docker image to be scanned
@@ -110,6 +110,26 @@ pipeline {
                         script {
                             // Run the PowerShell script for KubeSec scanning
                             bat "powershell -ExecutionPolicy Bypass -File kubesec-scan.ps1"
+                        }
+                    }
+                }
+                stage('Trivy Scan - Kubernetes') {
+                    steps {
+                        script {
+                            // Run Trivy scan for HIGH severity vulnerabilities on the Docker image
+                            def highScanCommand = "docker run --rm aquasec/trivy:0.17.2 image --exit-code 0 --severity HIGH --light nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+                            def highScanExitCode = bat(script: highScanCommand, returnStatus: true)
+
+                            // Run Trivy scan for CRITICAL severity vulnerabilities on the Docker image
+                            def criticalScanCommand = "docker run --rm aquasec/trivy:0.17.2 image --exit-code 1 --severity CRITICAL --light nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}"
+                            def criticalScanExitCode = bat(script: criticalScanCommand, returnStatus: true)
+
+                            // Check the scan results for critical vulnerabilities
+                            if (criticalScanExitCode != 0) {
+                                error "Image scanning failed. CRITICAL vulnerabilities found."
+                            } else {
+                                echo "Image scanning passed. No CRITICAL vulnerabilities found."
+                            }
                         }
                     }
                 }
