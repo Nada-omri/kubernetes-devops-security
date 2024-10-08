@@ -165,7 +165,7 @@ pipeline {
                 steps {
                     script {
                         // Wait for a minute before checking rollout status
-                        bat "timeout /t 60"
+                          bat "powershell -Command Start-Sleep -Seconds 60"
 
                         // Check rollout status
                         def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
