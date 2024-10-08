@@ -185,6 +185,11 @@ pipeline {
             }
         }
         }
+        stage('Integration Tests') {
+            steps {
+                bat "mvn verify -P integration-test"
+            }
+        }
     }
 
     post {
