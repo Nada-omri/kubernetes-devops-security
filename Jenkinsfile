@@ -153,7 +153,7 @@ pipeline {
             stage('K8S Deployment - DEV') {
                 steps {
                     script {
-                        withKubeConfig([credentialsId: 'minikube-server2']) {
+                        withKubeConfig([credentialsId: 'kubeconfig-credential']) {
                             // Apply the updated Kubernetes deployment
                             bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                         }
