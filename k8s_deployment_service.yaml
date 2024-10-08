@@ -16,9 +16,15 @@ spec:
         app: devsecops
     spec:
       serviceAccountName: default
+      volumes:
+      - name: vol
+        emptyDir: {}
       containers:
       - image: nadaomri/devsecops:v.21
         name: devsecops-container
+        volumeMounts:
+          - mountPath: /tmp
+            name: vol
         securityContext :
           runAsNonRoot: true 
           runAsUser: 100 
