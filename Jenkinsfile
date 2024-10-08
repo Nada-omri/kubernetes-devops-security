@@ -169,7 +169,7 @@ pipeline {
                           bat "powershell -Command Start-Sleep -Seconds 60"
 
                         // Check rollout status
-                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
+                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=15s"
                         def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
 
                         if (rolloutExitCode != 0) {
