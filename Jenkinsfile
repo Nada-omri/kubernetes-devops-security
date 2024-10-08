@@ -5,7 +5,7 @@ pipeline {
         BUILD_TAG = "v.${BUILD_NUMBER}"
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
-        DEPLOYMENT_NAME = 'k8s_deployment_service.yaml'
+        DEPLOYMENT_NAME = 'devsecops'
     }
 
     stages {
@@ -169,12 +169,12 @@ pipeline {
                           bat "powershell -Command Start-Sleep -Seconds 60"
 
                         // Check rollout status
-                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=15s"
+                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
                         def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
 
                         if (rolloutExitCode != 0) {
                             echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
-                            bat "kubectl -n default rollout undo deploy ${KUBERNETES_FILE}"
+                            bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
                             error "Deployment ${DEPLOYMENT_NAME} rollout failed."
                         } else {
                             echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
