@@ -164,6 +164,7 @@ pipeline {
             stage('Rollout status') {
                 steps {
                     script {
+                        withKubeConfig([credentialsId:'minikube']) {
                         // Wait for a minute before checking rollout status
                           bat "powershell -Command Start-Sleep -Seconds 60"
 
@@ -178,6 +179,7 @@ pipeline {
                         } else {
                             echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
                         }
+                    }
                     }
                 }
             }
