@@ -150,33 +150,35 @@ pipeline {
             }
         }
 
-        parallel {
-            stage('K8S Deployment - DEV') {
-                steps {
-                    script {
-                        withKubeConfig([credentialsId: 'kubeconfig-credential']) {
-                            // Apply the updated Kubernetes deployment
-                            bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
+        stage('K8S Deployment') {
+            parallel {
+                stage('K8S Deployment - DEV') {
+                    steps {
+                        script {
+                            withKubeConfig([credentialsId: 'kubeconfig-credential']) {
+                                // Apply the updated Kubernetes deployment
+                                bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
+                            }
                         }
                     }
                 }
-            }
-            stage('Rollout status') {
-                steps {
-                    script {
-                        // Wait for a minute before checking rollout status
-                        bat "timeout /t 60"
+                stage('Rollout Status') {
+                    steps {
+                        script {
+                            // Wait for a minute before checking rollout status
+                            bat "timeout /t 60"
 
-                        // Check rollout status
-                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
-                        def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
+                            // Check rollout status
+                            def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
+                            def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
 
-                        if (rolloutExitCode != 0) {
-                            echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
-                            bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
-                            error "Deployment ${DEPLOYMENT_NAME} rollout failed."
-                        } else {
-                            echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
+                            if (rolloutExitCode != 0) {
+                                echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
+                                bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
+                                error "Deployment ${DEPLOYMENT_NAME} rollout failed."
+                            } else {
+                                echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
+                            }
                         }
                     }
                 }
