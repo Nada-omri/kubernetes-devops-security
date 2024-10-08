@@ -174,7 +174,7 @@ pipeline {
 
                         if (rolloutExitCode != 0) {
                             echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
-                            bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
+                            bat "kubectl -n default rollout undo deploy ${KUBERNETES_FILE}"
                             error "Deployment ${DEPLOYMENT_NAME} rollout failed."
                         } else {
                             echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
