@@ -5,6 +5,7 @@ pipeline {
         BUILD_TAG = "v.${BUILD_NUMBER}"
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
+        DEPLOYMENT_NAME = 'k8s_deployment_service.yaml'
     }
 
     stages {
@@ -148,15 +149,37 @@ pipeline {
                 }
             }
         }
-
-        stage('K8S Deployment - DEV') {
-            steps {
-                script {
-                    withKubeConfig([credentialsId: 'minikube-server2']) {
-                        // Apply the updated Kubernetes deployment
-                        bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
+        parallel{
+            stage('K8S Deployment - DEV') {
+                steps {
+                    script {
+                        withKubeConfig([credentialsId: 'minikube-server2']) {
+                            // Apply the updated Kubernetes deployment
+                            bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
+                        }
                     }
                 }
+            }
+            stage('Rollout status'){
+                 steps {
+                    script {
+                        // Wait for a minute before checking rollout status
+                        bat "timeout /t 60"
+
+                        // Check rollout status
+                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
+                        def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
+
+                        if (rolloutExitCode != 0) {
+                            echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
+                            bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
+                            error "Deployment ${DEPLOYMENT_NAME} rollout failed."
+                        } else {
+                            echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
+                        }
+                    }
+                }
+
             }
         }
     }
