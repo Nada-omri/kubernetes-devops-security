@@ -6,6 +6,7 @@ pipeline {
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
         DEPLOYMENT_NAME = 'devsecops'
+         TARGET_URL = 'http://localhost:8080'
     }
 
     stages {
@@ -190,6 +191,39 @@ pipeline {
                 bat "mvn verify -P integration-test"
             }
         }
+        stage('OWASP ZAP - DAST') {
+                    steps {
+                        script {
+                            withKubeConfig([credentialsId: 'minikube']) {
+                                echo "Starting OWASP ZAP scan on ${TARGET_URL}"
+
+                                def zapDockerCommand = """
+                                docker run -v ${WORKSPACE}/zap-reports:/zap/reports --network host -u zap \
+                                owasp/zap2docker-stable zap-full-scan.py -t ${TARGET_URL} -r zap_report.html
+                                """
+
+                                // Run the OWASP ZAP scan and generate the report
+                                def zapExitCode = bat(script: zapDockerCommand, returnStatus: true)
+
+                                if (zapExitCode != 0) {
+                                    error "OWASP ZAP scan failed. Vulnerabilities found."
+                                } else {
+                                    echo "OWASP ZAP scan passed with no critical vulnerabilities."
+                                }
+
+                                // Publish the ZAP report in Jenkins
+                                publishHTML([
+                                    reportName: 'OWASP ZAP Report',
+                                    reportDir: 'zap-reports',
+                                    reportFiles: 'zap_report.html',
+                                    allowMissing: false,
+                                    keepAll: true,
+                                    alwaysLinkToLastBuild: true
+                                ])
+                            }
+                        }
+                    }
+                }
     }
 
     post {
