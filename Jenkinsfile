@@ -155,7 +155,7 @@ pipeline {
             stage('K8S Deployment - DEV') {
                 steps {
                     script {
-                        withKubeConfig([credentialsId:'minikube']) {
+                        withKubeConfig([credentialsId:'minikube-server2']) {
                             // Apply the updated Kubernetes deployment
                             bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                         }
@@ -165,7 +165,7 @@ pipeline {
             stage('Rollout status') {
                 steps {
                     script {
-                        withKubeConfig([credentialsId:'minikube']) {
+                        withKubeConfig([credentialsId:'minikube-server2']) {
                         // Wait for a minute before checking rollout status
                           bat "powershell -Command Start-Sleep -Seconds 60"
 
@@ -194,7 +194,7 @@ pipeline {
         stage('OWASP ZAP - DAST') {
                     steps {
                         script {
-                            withKubeConfig([credentialsId: 'minikube']) {
+                            withKubeConfig([credentialsId: 'minikube-server2']) {
                                 echo "Starting OWASP ZAP scan on ${TARGET_URL}"
 
                                 def zapDockerCommand = """
