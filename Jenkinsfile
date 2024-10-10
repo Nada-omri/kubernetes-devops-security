@@ -6,7 +6,7 @@ pipeline {
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
         DEPLOYMENT_NAME = 'devsecops'
-         TARGET_URL = 'http://localhost:8080'
+         TARGET_URL = 'http://localhost:8081'
     }
 
     stages {
@@ -184,6 +184,37 @@ pipeline {
                     }
                 }
             }
+            stage('ZAP Security Scan') {
+    steps {
+        script {
+            // Define the target URL for ZAP to scan
+            def targetUrl = "${TARGET_URL}"
+            echo "Running ZAP scan on: ${targetUrl}"
+
+            // Start ZAP Docker container
+            def zapContainerId = bat(script: "docker run -d -p 8081:8080 owasp/zap2docker-stable zap.sh -daemon -port 8080 -config api.disablekey=true", returnStdout: true).trim()
+
+            // Wait for ZAP to fully start
+            bat "powershell -Command Start-Sleep -Seconds 10"
+
+            // Run the ZAP scan on the target URL
+            def zapScanCommand = "docker exec ${zapContainerId} zap-cli -p 8080 open-url ${targetUrl} && docker exec ${zapContainerId} zap-cli -p 8080 spider ${targetUrl} && docker exec ${zapContainerId} zap-cli -p 8080 active-scan --scanners all ${targetUrl} --wait-for-results"
+            bat zapScanCommand
+
+            // Generate the report after the scan
+            def zapReportCommand = "docker exec ${zapContainerId} zap-cli -p 8080 report -o zap_report.html -f html"
+            bat zapReportCommand
+
+            // Archive the report as an artifact
+            archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: true
+
+            // Stop and remove ZAP container
+            bat "docker stop ${zapContainerId}"
+            bat "docker rm ${zapContainerId}"
+        }
+    }
+}
+
         }
         }
         stage('Integration Tests') {
@@ -191,40 +222,7 @@ pipeline {
                 bat "mvn verify -P integration-test"
             }
         }
-        stage('OWASP ZAP - DAST') {
-                    steps {
-                        script {
-                            withKubeConfig([credentialsId: 'minikube-server2']) {
-                                echo "Starting OWASP ZAP scan on ${TARGET_URL}"
-
-                                def zapDockerCommand = """
-                                docker run -v ${WORKSPACE}/zap-reports:/zap/reports --network host -u zap \
-                                owasp/zap2docker-stable zap-full-scan.py -t ${TARGET_URL} -r zap_report.html
-                                """
-
-                                // Run the OWASP ZAP scan and generate the report
-                                def zapExitCode = bat(script: zapDockerCommand, returnStatus: true)
-
-                                if (zapExitCode != 0) {
-                                    error "OWASP ZAP scan failed. Vulnerabilities found."
-                                } else {
-                                    echo "OWASP ZAP scan passed with no critical vulnerabilities."
-                                }
-
-                                // Publish the ZAP report in Jenkins
-                                publishHTML([
-                                    reportName: 'OWASP ZAP Report',
-                                    reportDir: 'zap-reports',
-                                    reportFiles: 'zap_report.html',
-                                    allowMissing: false,
-                                    keepAll: true,
-                                    alwaysLinkToLastBuild: true
-                                ])
-                            }
-                        }
-                    }
-                }
-    }
+        
 
     post {
         always {
