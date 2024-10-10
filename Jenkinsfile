@@ -191,36 +191,14 @@ pipeline {
                 bat "mvn verify -P integration-test"
             }
         }
-        stage('ZAP Security Scan') {
-            steps {
-                script {
-                    // Define the target URL for ZAP to scan
-                    def targetUrl = "${TARGET_URL}"
-                    echo "Running ZAP scan on: ${targetUrl}"
-
-                    // Start ZAP Docker container
-                    def zapContainerId = bat(script: "docker run -d -p 8081:8080 owasp/zap2docker-stable zap.sh -daemon -port 8080 -config api.disablekey=true", returnStdout: true).trim()
-
-                    // Wait for ZAP to fully start
-                    bat "powershell -Command Start-Sleep -Seconds 10"
-
-                    // Run the ZAP scan on the target URL
-                    def zapScanCommand = "docker exec ${zapContainerId} zap-cli -p 8080 open-url ${targetUrl} && docker exec ${zapContainerId} zap-cli -p 8080 spider ${targetUrl} && docker exec ${zapContainerId} zap-cli -p 8080 active-scan --scanners all ${targetUrl} --wait-for-results"
-                    bat zapScanCommand
-
-                    // Generate the report after the scan
-                    def zapReportCommand = "docker exec ${zapContainerId} zap-cli -p 8080 report -o zap_report.html -f html"
-                    bat zapReportCommand
-
-                    // Archive the report as an artifact
-                    archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: true
-
-                    // Stop and remove ZAP container
-                    bat "docker stop ${zapContainerId}"
-                    bat "docker rm ${zapContainerId}"
-                }
-            }
-}
+        
+    stage('Prompte to PROD?') {
+       steps {
+         timeout(time: 2, unit: 'DAYS') {
+           input 'Do you want to Approve the Deployment to Production Environment/Namespace?'
+         }
+       }
+     }
     }
     post {
         always {
