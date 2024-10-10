@@ -3,7 +3,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "devsecops"
         BUILD_TAG = "v.${BUILD_NUMBER}"
-        KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
+        KUBERNETES_FILE_PROD = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
         KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_PROD_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
         DEPLOYMENT_NAME = 'devsecops'
@@ -138,25 +138,18 @@ pipeline {
                 }
             }
         }
-
-        stage('Update Kubernetes File with Groovy') {
-            steps {
-                script {
-                    // Read the content of the Kubernetes YAML file
-                    def kubernetesFile = readFile("${KUBERNETES_FILE}")
-                    // Replace the image in the file
-                    def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
-                    // Rewrite the file with the updated content
-                    writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
-                }
-            }
-        }
         stage ('k8S'){
         parallel {
             stage('K8S Deployment - DEV') {
                 steps {
                     script {
                         withKubeConfig([credentialsId:'minikube-server2']) {
+                        // Read the content of the Kubernetes YAML file
+                            def kubernetesFile = readFile("${KUBERNETES_FILE}")
+                            // Replace the image in the file
+                            def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
+                            // Rewrite the file with the updated content
+                            writeFile file: "${KUBERNETES_FILE}", text: updatedKubernetesFile
                             // Apply the updated Kubernetes deployment
                             bat "kubectl -n default apply -f ${KUBERNETES_FILE}"
                         }
@@ -204,6 +197,12 @@ pipeline {
                 steps {
                     script {
                         withKubeConfig([credentialsId:'minikube-server2']) {
+                            // Read the content of the Kubernetes YAML file
+                            def kubernetesFile = readFile("${KUBERNETES_FILE_PROD}")
+                            // Replace the image in the file
+                            def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
+                            // Rewrite the file with the updated content
+                            writeFile file: "${KUBERNETES_FILE_PROD}", text: updatedKubernetesFile
                             // Apply the updated Kubernetes deployment
                             bat "kubectl -n default apply -f ${KUBERNETES_FILE_PROD}"
                         }
