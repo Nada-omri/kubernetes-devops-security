@@ -193,44 +193,49 @@ pipeline {
          }
        }
      }
-    stage('K8S Deployment - PROD') {
-                steps {
-                    script {
-                        withKubeConfig([credentialsId:'minikube-server2']) {
-                            // Read the content of the Kubernetes YAML file
-                            def kubernetesFile = readFile("${KUBERNETES_FILE_PROD}")
-                            // Replace the image in the file
-                            def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
-                            // Rewrite the file with the updated content
-                            writeFile file: "${KUBERNETES_FILE_PROD}", text: updatedKubernetesFile
-                            // Apply the updated Kubernetes deployment
-                            bat "kubectl -n default apply -f ${KUBERNETES_FILE_PROD}"
+    stage('Deploy to K8S and Check Rollout Status') {
+            parallel {
+                stage('K8S Deployment - PROD') {
+                    steps {
+                        script {
+                            withKubeConfig([credentialsId:'minikube-server2']) {
+                                // Read the content of the Kubernetes YAML file
+                                def kubernetesFile = readFile("${KUBERNETES_FILE_PROD}")
+                                // Replace the image in the file
+                                def updatedKubernetesFile = kubernetesFile.replaceAll(/(image:\s*nadaomri\/devsecops:).+/, "image: nadaomri/${DOCKER_IMAGE}:${BUILD_TAG}")
+                                // Rewrite the file with the updated content
+                                writeFile file: "${KUBERNETES_FILE_PROD}", text: updatedKubernetesFile
+                                // Apply the updated Kubernetes deployment
+                                bat "kubectl -n default apply -f ${KUBERNETES_FILE_PROD}"
+                            }
+                        }
+                    }
+                }
+                
+                stage('Rollout Status') {
+                    steps {
+                        script {
+                            withKubeConfig([credentialsId:'minikube-server2']) {
+                                // Wait for a minute before checking rollout status
+                                bat "powershell -Command Start-Sleep -Seconds 60"
+
+                                // Check rollout status
+                                def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
+                                def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
+
+                                if (rolloutExitCode != 0) {
+                                    echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
+                                    bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
+                                    error "Deployment ${DEPLOYMENT_NAME} rollout failed."
+                                } else {
+                                    echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
+                                }
+                            }
                         }
                     }
                 }
             }
-            stage('Rollout status') {
-                steps {
-                    script {
-                        withKubeConfig([credentialsId:'minikube-server2']) {
-                        // Wait for a minute before checking rollout status
-                        bat "powershell -Command Start-Sleep -Seconds 60"
-
-                                    // Check rollout status
-                        def rolloutStatusCommand = "kubectl -n default rollout status deploy ${DEPLOYMENT_NAME} --timeout=5s"
-                        def rolloutExitCode = bat(script: rolloutStatusCommand, returnStatus: true)
-
-                        if (rolloutExitCode != 0) {
-                            echo "Deployment ${DEPLOYMENT_NAME} Rollout has Failed"
-                            bat "kubectl -n default rollout undo deploy ${DEPLOYMENT_NAME}"
-                            error "Deployment ${DEPLOYMENT_NAME} rollout failed."
-                        } else {
-                                 echo "Deployment ${DEPLOYMENT_NAME} Rollout is Successful"
-                                    }
-                                }
-                                }
-                            }
-                        }
+        }
     }
     post {
         always {
