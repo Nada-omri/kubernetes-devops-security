@@ -39,7 +39,7 @@ pipeline {
 
         stage('Sonarqube-SAST') {
             steps {
-                bat "mvn clean verify sonar:sonar -Dsonar.projectKey=dev -Dsonar.projectName='devsecops' -Dsonar.host.url=http://192.168.1.64:9000 -Dsonar.token=sqp_1e5943d8aba71ee7e863c6dd548707131514fdca"
+                bat "mvn clean verify sonar:sonar -Dsonar.projectKey=dev -Dsonar.projectName='devsecops' -Dsonar.host.url=http://192.168.100.14:9000 -Dsonar.token=sqp_1e5943d8aba71ee7e863c6dd548707131514fdca"
             }
         }
 
