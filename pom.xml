@@ -91,6 +91,7 @@
 					</outputFormats>
 				</configuration>
 			</plugin>
+
 			
 			<plugin>
 				<groupId>org.owasp</groupId>
