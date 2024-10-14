@@ -34,6 +34,7 @@ pipeline {
         stage('Mutation Tests - PIT') {
             steps {
                 bat "mvn org.pitest:pitest-maven:mutationCoverage"
+                pitmutation mutationStatsFile: 'target/pit-reports/mutations.xml'
             }
         }
 
@@ -243,7 +244,7 @@ pipeline {
             
             junit 'target/surefire-reports/*.xml'
             jacoco execPattern: 'target/jacoco.exec'
-            pitmutation mutationStatsFile: 'target/pit-reports/mutations.xml'
+            
         }
 
         success {
