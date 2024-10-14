@@ -240,7 +240,7 @@ pipeline {
     post {
         always {
             dependencyCheckPublisher pattern: 'target/dependency-check-report.xml'
-            pitmutation mutationStatsFile: '**/target/pit-reports/**/mutations.xml'
+            pitmutation mutationStatsFile: 'target/pit-reports/mutations.xml'
             junit 'target/surefire-reports/*.xml'
             jacoco execPattern: 'target/jacoco.exec'
         }
