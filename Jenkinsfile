@@ -3,8 +3,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = "devsecops"
         BUILD_TAG = "v.${BUILD_NUMBER}"
-        KUBERNETES_FILE_PROD = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_deployment_service.yaml'
-        KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Devsecops-training\\k8s_PROD_deployment_service.yaml'
+        KUBERNETES_FILE_PROD = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops-numeric-application\\k8s_deployment_service.yaml'
+        KUBERNETES_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops-numeric-application\k8s_PROD_deployment_service.yaml'
         KUBERNETES_REPO_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\devsecops\\projet-jenkins-test'
         DEPLOYMENT_NAME = 'devsecops'
          TARGET_URL = 'http://localhost:8080'
